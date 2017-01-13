@@ -15,10 +15,7 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-x64/
-x86/
 bld/
-[Bb]in/
 [Oo]bj/
 [Ll]og/
 
@@ -68,7 +65,10 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
-
+*.exe
+*.lib
+*.iobj
+*.ipdb
 # Chutzpah Test files
 _Chutzpah*
 
