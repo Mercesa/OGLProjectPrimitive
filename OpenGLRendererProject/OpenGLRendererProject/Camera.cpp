@@ -15,7 +15,7 @@ Camera::~Camera()
 {
 }
 
-static float gSpeed = 4.0f;
+static float gSpeed = 6.0f;
 
 void Camera::Strafe(float aDT, cameraMovement camDirection)
 {

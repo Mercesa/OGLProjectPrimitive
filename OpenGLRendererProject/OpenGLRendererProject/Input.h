@@ -23,7 +23,7 @@ public:
 	void MouseUp(int _Button);
 	void MouseDown(int _Button);
 	void MouseMove(int _X, int _Y);
-	void MousePosition(int _X, int _Y) { mousePosition.x = _X; mousePosition.y = _Y; }
+	void MousePosition(int _X, int _Y) { mouseRelativeMoved.x = static_cast<float>(_X); mouseRelativeMoved.y = static_cast<float>(_Y); }
 	void KeyUp(unsigned int a_Key);
 	void KeyDown(unsigned int a_Key);
 
@@ -38,7 +38,7 @@ public:
 	bool GetKeyUp(KEYS key);
 	bool GetKey(KEYS key);
 
-	XYstruct mousePosition;
+	XYstruct mouseRelativeMoved;
 
 private:
 	bool keysDown[9];

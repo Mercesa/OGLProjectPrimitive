@@ -5,8 +5,8 @@ using namespace Primitive;
 
 Input::Input()
 {
-	mousePosition.x = 0;
-	mousePosition.y = 0;
+	mouseRelativeMoved.x = 0;
+	mouseRelativeMoved.y = 0;
 	std::cout << "Input class constructor" << std::endl;
 	Init();
 }
@@ -39,13 +39,12 @@ void Input::Update()
 		keysDown[i] = false;
 		keysUp[i] = false;
 	}
-
 }
 
 void Input::MouseMove(int _X, int _Y)
 {
-	mousePosition.x = _X;
-	mousePosition.y = _Y;
+	mouseRelativeMoved.x = static_cast<float>(_X);
+	mouseRelativeMoved.y = static_cast<float>(_Y);
 	//std::cout << mousePosition.x << std::endl;
 }
 
@@ -173,6 +172,13 @@ void Input::KeyDown(unsigned int a_Key)
 		}
 		keys[RIGHTARROW] = true;
 		break;
+	case 32:
+		if (!keys[SPACE])
+		{
+			keysDown[SPACE] = true;
+			keysUp[SPACE] = false;
+		}
+		keys[SPACE] = true;
 	}
 }
 
