@@ -32,10 +32,46 @@ using namespace Primitive;
 static const int16_t sScreenWidth = 1024;
 static const int16_t sScreenHeight = 768;
 
-std::vector<Light> gLights;
-static const uint16_t MAX_LIGHTS = 256;
+glm::mat4 Projection;
+glm::mat4 View;
+
 std::unique_ptr<IScene> mScene = std::make_unique<FirstTestScene>();
 
+std::vector<Light> gLights;
+static const uint16_t MAX_LIGHTS = 256;
+
+std::shared_ptr<ShaderProgram> mProgramLight;
+std::shared_ptr<ShaderProgram> mProgram;
+std::shared_ptr<ShaderProgram> mProgramHDR;
+
+SDL_Window* window;
+
+std::vector<std::shared_ptr<GLMesh>> mMeshesToBeRendered;
+std::shared_ptr<GLMesh> cubeMesh;;
+
+
+void InitializeOGL()
+{
+	SDL_Init(SDL_INIT_EVERYTHING);
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
+	window = SDL_CreateWindow("OpenGL", 100, 100, sScreenWidth, sScreenHeight, SDL_WINDOW_OPENGL);
+	SDL_GLContext context = SDL_GL_CreateContext(window);
+
+	glewExperimental = GL_TRUE;
+	glewInit();
+
+	glEnable(GL_MULTISAMPLE);
+
+	SDL_GL_SetSwapInterval(1);
+	// Define the viewport dimensions
+	glViewport(0, 0, sScreenWidth, sScreenHeight);
+}
 
 void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 {
@@ -43,12 +79,16 @@ void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 	// Assure we don't go over the max
 	uint16_t loopAmount = tLights.size() < MAX_LIGHTS ? tLights.size() : MAX_LIGHTS;
 	
+	
+	GLuint tShaderProg = shaderProgram;
+
+	GLuint amountOfLightsULoc = glGetUniformLocation(tShaderProg, "amountOfLights");
+	glUniform1i(amountOfLightsULoc, loopAmount);
 
 	for (unsigned int i = 0; i < loopAmount; i++)
 	{
 		Light& l = tLights[i];
 		std::string shaderString = "Lights[" + std::to_string(i) + "].";
-		GLuint tShaderProg = shaderProgram;
 
 		GLuint lightDiffuse = glGetUniformLocation(tShaderProg, (shaderString + "DiffuseColor").c_str());
 		GLuint lightSpecular = glGetUniformLocation(tShaderProg, (shaderString + "SpecularColor").c_str());
@@ -65,8 +105,6 @@ void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 
 }
 
-glm::mat4 Projection;
-glm::mat4 View;
 
 void RenderLights(GLMesh* const aMesh, uint32_t aProgram)
 {
@@ -94,42 +132,16 @@ void RenderLights(GLMesh* const aMesh, uint32_t aProgram)
 	glUseProgram(0);
 }
 
-int main(int argc, char* argv[])
+
+void InitializeShadersAndPrograms()
 {
-	SDL_Init(SDL_INIT_EVERYTHING);
-
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
-	
-
-	SDL_Window* window = SDL_CreateWindow("OpenGL", 100, 100, sScreenWidth, sScreenHeight, SDL_WINDOW_OPENGL);
-	SDL_GLContext context = SDL_GL_CreateContext(window);
-
-	glewExperimental = GL_TRUE;
-	glewInit();
-	
-	glEnable(GL_MULTISAMPLE);
-
-	SDL_GL_SetSwapInterval(1);
-
-	// Define the viewport dimensions
-	glViewport(0, 0, sScreenWidth, sScreenHeight);
-
-
-	Projection = glm::perspective(glm::radians(90.0f), (float)sScreenWidth / (float)sScreenHeight, 0.1f, 1000.0f);
-	View = glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
 	auto basicVertexShader = std::make_unique<Shader>();
 	basicVertexShader->LoadShader("Shaders\\VertexShaderBasicPosition.vert", eSHADER_VERTEX);
 
 	auto basicFragmentShader = std::make_unique<Shader>();
 	basicFragmentShader->LoadShader("Shaders\\FragmentShaderBasicPosition.frag", eSHADER_FRAGMENT);
 
-	std::shared_ptr<ShaderProgram> mProgram = std::make_shared<ShaderProgram>();
+	mProgram = std::make_shared<ShaderProgram>();
 	mProgram->AddShader(basicVertexShader.get());
 	mProgram->AddShader(basicFragmentShader.get());
 	mProgram->CompileProgram();
@@ -140,51 +152,132 @@ int main(int argc, char* argv[])
 	auto lightFragmentShader = std::make_unique<Shader>();
 	lightFragmentShader->LoadShader("Shaders\\FragmentShaderLight.frag", eSHADER_FRAGMENT);
 
-	std::shared_ptr<ShaderProgram> mProgramLight = std::make_shared<ShaderProgram>();
+	mProgramLight = std::make_shared<ShaderProgram>();
 	mProgramLight->AddShader(lightVertexShader.get());
 	mProgramLight->AddShader(lightFragmentShader.get());
 	mProgramLight->CompileProgram();
 
+	auto hdrPostProcShaderVertex = std::make_unique<Shader>();
+	hdrPostProcShaderVertex->LoadShader("Shaders\\PostProcHDR.vert", eSHADER_VERTEX);
+	
+	auto hdrPostprocShaderFragment = std::make_unique<Shader>();
+	hdrPostprocShaderFragment->LoadShader("Shaders\\PostProcHDR.frag", eSHADER_FRAGMENT);
+	
+	mProgramHDR = std::make_shared<ShaderProgram>();
+	mProgramHDR->AddShader(hdrPostProcShaderVertex.get());
+	mProgramHDR->AddShader(hdrPostprocShaderFragment.get());
+	mProgramHDR->CompileProgram();
+}
 
-	MeshData data;	
+void LoadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTextureLoader)
+{
+	aModelLoader->LoadModel("Models\\Sponza\\Sponza.obj");
+
+	for (auto e : aModelLoader->GetMeshesToBeProcessed())
+	{
+		auto tGLMesh = std::make_shared<GLMesh>(e);
+
+		tGLMesh->textureID = aTextureLoader->LoadTexture(e.materialData.mTextures[0].mTextureFilePath);
+		mMeshesToBeRendered.push_back(tGLMesh);
+	}
+	aModelLoader->ClearProcessedMeshes();
+
+
+	aModelLoader->LoadModel("Models\\Cube.obj");
+	for (auto e : aModelLoader->GetMeshesToBeProcessed())
+	{
+		cubeMesh = std::make_shared<GLMesh>(e);
+	}
+	aModelLoader->ClearProcessedMeshes();
+
+}
+
+void RenderQuad();
+int main(int argc, char* argv[])
+{
+	
+	InitializeOGL();
+	InitializeShadersAndPrograms();
 
 	std::unique_ptr<ModelLoader> modLoader = std::make_unique<ModelLoader>();
 	std::unique_ptr<GLTextureLoader> texLoader = std::make_unique<GLTextureLoader>();
 	std::shared_ptr<Input> input = std::make_shared<Input>();
 	auto engTimer = std::make_unique<EngineTimer>();
 
+	LoadModels(modLoader.get(), texLoader.get());
 
-	modLoader->LoadModel("Models\\Sponza\\Sponza.obj");
+	Projection = glm::perspective(glm::radians(90.0f), (float)sScreenWidth / (float)sScreenHeight, 0.1f, 1000.0f);
+	View = glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
+	// Model matrix for sponza
 	glm::mat4x4 modelMatrix = glm::mat4x4(1.0f);
 	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.01f, 0.01f, 0.01f));
-
-	std::vector<std::shared_ptr<GLMesh>> mMeshesToBeRendered;
-	for (auto e : modLoader->GetMeshesToBeProcessed())
-	{
-		auto tGLMesh = std::make_shared<GLMesh>(e);
-		
-		tGLMesh->textureID = texLoader->LoadTexture(e.materialData.mTextures[0].mTextureFilePath);
-		mMeshesToBeRendered.push_back(tGLMesh);
-	}
-	modLoader->ClearProcessedMeshes();
-
-
-
-	
-	std::shared_ptr<GLMesh> tMesh;;
-	modLoader->LoadModel("Models\\Cube.obj");
-	for (auto e : modLoader->GetMeshesToBeProcessed())
-	{
-		tMesh = std::make_shared<GLMesh>(e);
-	}
-	modLoader->ClearProcessedMeshes();
-
-
 
 	SDL_Event evt;
 	
 	mScene->Init();
+
+
+	GLuint hdrFBO;
+	GLuint colorBuffer;
+	GLuint rboDepth;
+
+
+	//glGenFramebuffers(1, &hdrFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	//
+	//
+	//glGenTextures(1, &colorBuffer);
+	//glBindTexture(GL_TEXTURE_2D, colorBuffer);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, sScreenWidth, sScreenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//
+	//
+	//glGenRenderbuffers(1, &rboDepth);
+	//glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sScreenWidth, sScreenHeight);
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	//
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorBuffer, 0);
+	//GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	//glDrawBuffers(1, DrawBuffers);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//{
+	//	std::cout << "framebuffer not complete " << std::endl;
+	//}
+
+	GLuint FramebufferName = 0;
+	glGenFramebuffers(1, &FramebufferName);
+	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+	GLuint renderedTexture;
+	glGenTextures(1, &renderedTexture);
+
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, sScreenWidth, sScreenHeight, 0, GL_RGB, GL_FLOAT, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint depthrenderbuffer;
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sScreenWidth, sScreenHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+	// Set the list of draw buffers.
+	GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+
 	bool quit = false;
 	while (!quit)
 	{
@@ -230,13 +323,16 @@ int main(int argc, char* argv[])
 		if (input->GetKeyDown(Primitive::Input::KEYS::SPACE))
 		{
 			usePhong = !usePhong;
-			std::cout << "Use phong " << usePhong << std::endl;
 		}
 	
 		// Render
 		// Clear the colorbuffer
+
+	
+		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		glCullFace(GL_BACK);
 		glEnable(GL_DEPTH_TEST);
 
@@ -267,10 +363,22 @@ int main(int argc, char* argv[])
 		glUseProgram(0);
 
 
-		RenderLights(tMesh.get(), mProgramLight->GetProgram());
+		RenderLights(cubeMesh.get(), mProgramLight->GetProgram());
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(mProgramHDR->GetProgram());
+		//glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "hdrBuffer"), 0);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderedTexture);
+		RenderQuad();
+		glUseProgram(0);
+
+		SDL_SetWindowTitle(window, std::to_string(1.0f/engTimer->GetDeltaTime()).c_str());
 		SDL_GL_SwapWindow(window);
 
-		//return 0;
 	}
 
 	// Properly de-allocate all resources once they've outlived their purpose
@@ -280,3 +388,33 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+
+// Taken from learnopengl.com, could've done it myself but too lazy right now
+GLuint quadVAO = 0;
+GLuint quadVBO;
+void RenderQuad()
+{
+	if (quadVAO == 0)
+	{
+		GLfloat quadVertices[] = {
+			// Positions        // Texture Coords
+			-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+			1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// Setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}

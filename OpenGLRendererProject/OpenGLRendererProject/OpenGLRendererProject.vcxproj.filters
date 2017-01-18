@@ -63,10 +63,10 @@
     <ClInclude Include="Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FirstTestScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="IScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
@@ -105,7 +105,7 @@
       <Filter>Scenes</Filter>
     </ClCompile>
     <ClCompile Include="IScene.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -119,6 +119,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\FragmentShaderLight.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PostProcHDR.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PostProcHDR.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
