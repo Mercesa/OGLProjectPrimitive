@@ -1,10 +1,10 @@
 #version 450 core
 
+layout(location = 0) out vec3 color;
 
 uniform vec3 lightColor;
-out vec4 color;
 
 void main()
 {
-	color = vec4(lightColor.rgb, 1.0f);		
+	color = vec3(lightColor.rgb);		
 }	
