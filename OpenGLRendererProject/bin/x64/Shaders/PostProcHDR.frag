@@ -4,11 +4,17 @@ out vec4 color;
 in vec2 outTexC;
 
 uniform sampler2D hdrBuffer;
+uniform sampler2D brightnessBuffer;
+
+// Define gamma so it compiles into a literal (instead of redoing the calculation over and over again)
+#define GAMMA 1.0/1.01
+
 
 void main()
 {	
 	vec3 hdrColor = texture(hdrBuffer, outTexC).rgb;
-	color = vec4(hdrColor, 1.0);
-	
-	//color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	hdrColor = texture(brightnessBuffer, outTexC).rgb + hdrColor.rgb;
+	vec3 toneMapped = hdrColor / (hdrColor + vec3(1.0));
+	toneMapped = pow(toneMapped.rgb, vec3(1.0/GAMMA));
+	color = vec4(toneMapped, 1.0);
 }	
