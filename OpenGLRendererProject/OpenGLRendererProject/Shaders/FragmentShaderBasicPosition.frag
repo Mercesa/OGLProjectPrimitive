@@ -2,6 +2,8 @@
 
 // Write to RGBA buffer
 layout(location = 0) out vec3 color;
+layout(location = 1) out vec3 brightnessColor;
+
 
 struct light
 {
@@ -26,7 +28,7 @@ uniform light Lights[256];
 
 void main()
 {	
-	vec4 ambient = vec4(0.0f) * texture(diffuseTexture, outTexC);
+	//vec4 ambient = vec4(0.0f) * texture(diffuseTexture, outTexC);
 	
 	// Frag to eye vector
 	vec3 FE = normalize(cameraPosition - outFragPosition);
@@ -44,7 +46,6 @@ void main()
 		float specDiff = 0.0f;
 
 		// blinn lighting
-
 		if(usePhong == 0)
 		{
 			vec3 halfWayDir = normalize(FE+L);
@@ -59,15 +60,19 @@ void main()
 			specDiff = pow(max(dot(FE, R), 0.0), 32);
 		}
 
-	
-		
-
 		vec3 diffuseColor =		vec3(texture(diffuseTexture, outTexC) * dotProdLightNormal * vec4(Lights[i].DiffuseColor.rgb, 1.0f)) * attenuation;
 		vec3 specularColor =	vec3(vec4(Lights[i].SpecularColor.rgb, 1.0f)) * specDiff * attenuation;
 
 		// cache diffuse texture instead of getting it over and over again
 		color.rgb += (diffuseColor.rgb + specularColor.rgb);
+
 	}
-	color += vec3(ambient.rgb);	
+
+	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	if(brightness > 1.0f)
+		brightnessColor = color;
+	else{
+		brightnessColor = vec3(0.0f, 0.0f, 0.0f);
+	}
 
 }	

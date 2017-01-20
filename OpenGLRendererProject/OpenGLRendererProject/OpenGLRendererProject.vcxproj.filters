@@ -127,5 +127,11 @@
     <None Include="Shaders\PostProcHDR.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\GaussianBlur.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GuassianBlur.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
