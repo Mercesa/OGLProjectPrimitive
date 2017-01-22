@@ -47,7 +47,7 @@ uint32_t GLTextureLoader::LoadTexture(const std::string& aString)
 	}
 	else
 	{
-		std::cout << "Re-using asset" << std::endl;
+		//std::cout << "Re-using asset" << std::endl;
 		return textureID;
 	}
 

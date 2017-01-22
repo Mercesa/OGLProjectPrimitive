@@ -37,9 +37,9 @@ void FirstTestScene::Init()
 	//}	
 
 	Light l;
-	l.position = glm::vec3(0.0f, 2.0f, 0.0f);
-	l.diffuseColor = glm::vec3(50.0f, 50.0f, 50.0f);
-	l.specularColor = glm::vec3(0.0f, 0.0f, 0.0f);
+	l.position = glm::vec3(0.0f, 2.0f, 1.0f);
+	l.diffuseColor = glm::vec3(5.0f, 0.0f, 5.0f);
+	l.specularColor = glm::vec3(5.0f, 0.0f, 5.0f);
 	mLights.push_back(l);
 }
 

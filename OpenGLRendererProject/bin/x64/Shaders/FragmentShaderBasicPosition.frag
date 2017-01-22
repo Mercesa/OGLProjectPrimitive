@@ -71,5 +71,8 @@ void main()
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if(brightness > 1.0f)
 		brightnessColor = color;
+	else{
+		brightnessColor = vec3(0.0f, 0.0f, 0.0f);
+	}
 
 }	
