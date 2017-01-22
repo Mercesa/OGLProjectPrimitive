@@ -38,7 +38,7 @@ void main()
 		// Vector from frag position to light position
 		vec3 L = Lights[i].position - outFragPosition;
 		float distance = length(L);
-		float attenuation = 1.0f / (1.0 + 0.7 * distance + 1.8 * (distance * distance));   
+		float attenuation = 1.0f / (1.0 + 0.22 * distance + 0.20 * (distance * distance));   
 		L = normalize(L);
 		float dotProdLightNormal = max(dot(L, outNormal), 0.0f);
 

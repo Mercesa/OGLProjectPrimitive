@@ -115,7 +115,7 @@ void RenderLights(GLMesh* const aMesh, uint32_t aProgram)
 	{
 		modelMatrix = glm::mat4(1.0f);
 		modelMatrix = glm::translate(modelMatrix, e.position);
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(0.1f));
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f));
 		glUniformMatrix4fv(glGetUniformLocation(aProgram, "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
 		glUniformMatrix4fv(glGetUniformLocation(aProgram, "projection"), 1, GL_FALSE, glm::value_ptr(Projection));
 		glUniformMatrix4fv(glGetUniformLocation(aProgram, "view"), 1, GL_FALSE, glm::value_ptr(mScene->GetCamera()->GetViewMatrix()));
@@ -169,11 +169,11 @@ void InitializeShadersAndPrograms()
 	mProgramHDR->CompileProgram();
 
 
-	auto gaussianVertexShader = std::make_unique<Shader>();
+	auto gaussianVertexShader = std::make_shared<Shader>();
 	gaussianVertexShader->LoadShader("Shaders\\GaussianBlur.vert", eSHADER_VERTEX);
 
-	auto gaussianFragmentShader = std::make_unique<Shader>();
-	gaussianFragmentShader->LoadShader("Shaders\\GaussianBlur.frag", eSHADER_FRAGMENT);
+	auto gaussianFragmentShader = std::make_shared<Shader>();
+	gaussianFragmentShader->LoadShader("Shaders\\GuassianBlur.frag", eSHADER_FRAGMENT);
 
 	mProgramGaussian = std::make_shared<ShaderProgram>();
 	mProgramGaussian->AddShader(gaussianVertexShader.get());
@@ -228,6 +228,16 @@ int main(int argc, char* argv[])
 
 	SDL_Event evt;
 	
+
+
+	glUseProgram(mProgramHDR->GetProgram());
+	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "hdrBuffer"), 0);
+	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "brightnessBuffer"), 1);
+
+	glUseProgram(mProgramGaussian->GetProgram());
+	glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
+
+
 	mScene->Init();
 
 
@@ -278,9 +288,54 @@ int main(int argc, char* argv[])
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // We clamp to the edge as the blur filter would otherwise sample repeated texture values!
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+		GLuint attachments[1] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, attachments);
 		// Also check if framebuffers are complete (no need for depth buffer)
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			std::cout << "Framebuffer not complete!" << std::endl;
+		GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		switch (status) {
+		case GL_FRAMEBUFFER_COMPLETE:
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			std::cout << "An attachment could not be bound to frame buffer object!" << std::endl;
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			 std::cout << "Attachments are missing! At least one image (texture) must be bound to the frame buffer object!";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+			 std::cout << "The dimensions of the buffers attached to the currently used frame buffer object do not match!";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+			 std::cout << "The formats of the currently used frame buffer object are not supported or do not fit together!";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+			 std::cout << "A Draw buffer is incomplete or undefinied. All draw buffers must specify attachment points that have images attached.";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+			 std::cout << "A Read buffer is incomplete or undefinied. All read buffers must specify attachment points that have images attached.";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+			 std::cout << "All images must have the same number of multisample samples.";
+			break;
+
+		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+			 std::cout << "If a layered image is attached to one attachment, then all attachments must be layered attachments. The attached layers do not have to have the same number of layers, nor do the layers have to come from the same kind of texture.";
+			break;
+
+		case GL_FRAMEBUFFER_UNSUPPORTED:
+			 std::cout << "Attempt to use an unsupported format combinaton!";
+			break;
+
+		default:
+			 std::cout << "Unknown error while attempting to create frame buffer object!";
+			break;
+		}
 	}
 
 
@@ -373,35 +428,21 @@ int main(int argc, char* argv[])
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		glEnable(GL_TEXTURE_2D);
-		
+
 		// 2. Blur bright fragments w/ two-pass Gaussian Blur 
 		GLboolean horizontal = true, first_iteration = true;
-		GLuint amount = 10;
+		GLuint amount = 20;
 		glUseProgram(mProgramGaussian->GetProgram());
-		GLuint texLoc = glGetUniformLocation(mProgramGaussian->GetProgram(), "image");
-		glUniform1i(texLoc, 0);
-
-
+		std::cout << mProgramGaussian->GetProgram() << std::endl;
 		for (GLuint i = 0; i < amount; i++)
 		{
+
+			//std::cout << "hello" << std::endl;
 			glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
 			glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "horizontal"), horizontal);
+			glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
 
-
-
-			glActiveTexture(GL_TEXTURE0);
-
-			if (first_iteration)
-			{
-				glBindTexture(GL_TEXTURE_2D, colorBuffers[1]);
-			}
-
-			else
-			{
-				glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
-			}
-			//glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+			glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
 
 			RenderQuad();
 			horizontal = !horizontal;
@@ -413,17 +454,10 @@ int main(int argc, char* argv[])
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(mProgramHDR->GetProgram());
-
-		texLoc = glGetUniformLocation(mProgramGaussian->GetProgram(), "hdrBuffer");
-		glUniform1i(texLoc, 0);
-		texLoc = glGetUniformLocation(mProgramGaussian->GetProgram(), "brightnessBuffer");
-		glUniform1i(texLoc, 1);
-
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
-
+		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
 		RenderQuad();
 		glUseProgram(0);
 
