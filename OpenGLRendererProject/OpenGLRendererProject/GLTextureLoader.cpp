@@ -22,7 +22,9 @@ uint32_t GLTextureLoader::LoadTexture(const std::string& aString)
 	GLuint textures[1];
 	glGenTextures(1, textures);
 
+	// Get texture
 	int32_t textureID = Primitive::GetTexture(aString);
+	// Texture not in system yet? load it new
 	if (textureID == -1)
 	{
 		int width, height;
@@ -35,19 +37,18 @@ uint32_t GLTextureLoader::LoadTexture(const std::string& aString)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 		glGenerateMipmap(GL_TEXTURE_2D);  //Generate num_mipmaps number of mipmaps here.
 		SOIL_free_image_data(image);
-		//free(image);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_WRAP_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_WRAP_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		// Add to global data cache so we can fetch texture for re-use
 		Primitive::AddToMap(aString, textures[0]);
 		return textures[0];
 	}
 	else
 	{
-		//std::cout << "Re-using asset" << std::endl;
 		return textureID;
 	}
 

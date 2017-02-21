@@ -7,7 +7,7 @@
 
 using namespace Primitive;
 
-Shader::Shader()
+Shader::Shader() : hasCompiled(false), mShaderType(Shader_Types::eSHADER_UNKNOWN)
 {
 }
 

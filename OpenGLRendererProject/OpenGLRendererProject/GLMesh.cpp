@@ -2,6 +2,7 @@
 
 #include <GL\glew.h>
 #include "MeshData.h"
+#include "GLTexture.h"
 
 using namespace Primitive;
 

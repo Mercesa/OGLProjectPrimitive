@@ -3,9 +3,12 @@
 #include "stdafx.h"
 
 
+#include "GLTexture.h"
+
 namespace Primitive
 {
-// GLMesh keeps OGL specific data
+
+	// GLMesh keeps OGL specific data
 
 struct MeshData;
 
@@ -18,7 +21,7 @@ public:
 	uint32_t mVBO, mVAO, mEBO;
 	uint32_t mAmountOfIndices;
 
-	uint32_t textureID;
+	std::shared_ptr<GLTexture> mTexture;
 
 };
 

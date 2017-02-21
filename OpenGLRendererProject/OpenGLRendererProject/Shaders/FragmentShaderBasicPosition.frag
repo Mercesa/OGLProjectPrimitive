@@ -1,4 +1,4 @@
-#version 450 core
+#version 430 core
 
 // Write to RGBA buffer
 layout(location = 0) out vec3 color;

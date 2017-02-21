@@ -69,6 +69,18 @@
     <ClInclude Include="IScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLTimer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLFramebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -107,6 +119,18 @@
     <ClCompile Include="IScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLTimer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLFramebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\FragmentShaderBasicPosition.frag">
@@ -131,6 +155,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\GuassianBlur.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\InitialTestCompute.comp">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

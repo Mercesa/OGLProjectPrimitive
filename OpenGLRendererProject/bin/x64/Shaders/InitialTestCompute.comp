@@ -1,0 +1,47 @@
+#version 430 core
+
+layout (local_size_x = 8, local_size_y = 8) in;
+
+
+layout (rgba16f, binding = 0) uniform highp image2D img_input;
+layout (rgba16f, binding = 1) uniform highp image2D img_output;
+
+
+float weight[5] = float[] (0.2270270270f, 0.1945945946f, 0.1216216216f, 0.0540540541f, 0.0162162162f);
+
+
+void main(void)
+{             
+	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+
+	bool horizontal = true;
+	for(int j = 0; j < 6; ++j)
+	{
+		if(horizontal)
+		{
+			vec3 pixelColour = imageLoad(img_input, p).rgb;
+		    for(int i = 1; i < 5; ++i)
+		    {
+		       pixelColour += imageLoad(img_input, p + ivec2(i, 0.0)).rgb * weight[i];
+		       pixelColour += imageLoad(img_input, p - ivec2(i, 0.0)).rgb * weight[i];
+		    }
+			barrier();
+			imageStore(img_output, p, vec4(pixelColour.rgb, 1.0f));  
+		}
+
+		else
+		{
+			vec3 pixelColour = imageLoad(img_output, p).rgb;
+
+		    for(int i = 1; i < 5; ++i)
+		    {
+		        pixelColour += imageLoad(img_output, p + ivec2(0.0, i)).rgb * weight[i];
+		        pixelColour += imageLoad(img_output, p - ivec2(0.0, i)).rgb * weight[i];
+		    }
+			
+			barrier();
+			imageStore(img_input, p, vec4(pixelColour.rgb, 1.0f));  
+		}
+		horizontal = !horizontal;
+	}
+}
