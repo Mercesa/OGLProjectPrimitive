@@ -1,4 +1,4 @@
-#version 450 core
+#version 430 core
 
 out vec4 color;
 in vec2 outTexC;
@@ -13,8 +13,8 @@ uniform sampler2D brightnessBuffer;
 void main()
 {	
 	vec3 hdrColor = texture(hdrBuffer, outTexC).rgb;
-	vec3 newCol = texture(brightnessBuffer, outTexC).rgb;
-	//vec3 toneMapped = newCol / (newCol + vec3(1.0));
+	vec3 newCol = texture(brightnessBuffer, outTexC).rgb + hdrColor;
+	vec3 toneMapped = newCol / (newCol + vec3(1.0));
 	newCol = pow(newCol.rgb, vec3(1.0/GAMMA));
 	color = vec4(newCol, 1.0);
 }	

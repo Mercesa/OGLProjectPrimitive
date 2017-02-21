@@ -16,7 +16,8 @@ public:
 	void UseProgram();
 	uint32_t GetProgram() { return mShaderProgramID; }
 
-	void CompileProgram();
+	void CompileProgram(bool isCompute = false);
+
 	void AddShader(Shader* const aShader);
 
 private:
@@ -24,8 +25,11 @@ private:
 	Shader* mVertexShader;
 	Shader* mFragmentShader;
 	Shader* mGeometryShader;
+	Shader* mComputeShader;
 
 	uint32_t mShaderProgramID;
+
+	bool hasCompiled;
 };
 
 }

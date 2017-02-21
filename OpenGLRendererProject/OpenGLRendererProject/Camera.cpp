@@ -45,6 +45,7 @@ glm::mat4x4 Camera::GetViewMatrix()
 	return glm::lookAt(camPosition, camPosition + camForward, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
+
 void Camera::MoveWithMouse(int aX, int aY)
 {
 	static bool firstMouse = false;

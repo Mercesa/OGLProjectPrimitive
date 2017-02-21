@@ -14,6 +14,8 @@ enum Shader_Types
 	eSHADER_TESSELATION_CONTROL,
 	eSHADER_TESSELATION_EVELUATION,
 	eSHADER_COMPUTE,
+	// Unknown is also synonymous for shader being unitialized
+	eSHADER_UNKNOWN
 };
 
 
@@ -33,5 +35,6 @@ protected:
 	std::string mShaderFileLocation;
 	Shader_Types mShaderType;
 	uint32_t mShader;
+	bool hasCompiled;
 };
 }

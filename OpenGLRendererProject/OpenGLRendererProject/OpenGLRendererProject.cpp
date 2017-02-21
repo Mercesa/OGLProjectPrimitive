@@ -18,6 +18,7 @@
 #include "ShaderProgram.h"
 #include "MeshData.h"
 #include "GLMesh.h"
+#include "GLTimer.h"
 #include "Camera.h"
 #include "Input.h"
 #include "EngineTimer.h"
@@ -25,15 +26,17 @@
 #include "GLTextureLoader.h"
 #include "Light.h"
 #include "FirstTestScene.h"
+#include "GLTexture.h"
+
 
 using namespace Primitive;
+
 
 // Shaders
 static const int16_t sScreenWidth = 1024;
 static const int16_t sScreenHeight = 768;
 
 glm::mat4 Projection;
-glm::mat4 View;
 
 std::unique_ptr<IScene> mScene = std::make_unique<FirstTestScene>();
 
@@ -44,6 +47,7 @@ std::shared_ptr<ShaderProgram> mProgramLight;
 std::shared_ptr<ShaderProgram> mProgram;
 std::shared_ptr<ShaderProgram> mProgramHDR;
 std::shared_ptr<ShaderProgram> mProgramGaussian;
+std::shared_ptr<ShaderProgram> mProgramCompute;
 
 
 SDL_Window* window;
@@ -58,7 +62,7 @@ void InitializeOGL()
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
@@ -70,10 +74,11 @@ void InitializeOGL()
 
 	glEnable(GL_MULTISAMPLE);
 
-	SDL_GL_SetSwapInterval(1);
+	SDL_GL_SetSwapInterval(0);
 	// Define the viewport dimensions
 	glViewport(0, 0, sScreenWidth, sScreenHeight);
 }
+
 
 void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 {
@@ -102,7 +107,6 @@ void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 		glUniform3f(lightPosition, l.position.x, l.position.y, l.position.z);
 		// dont query all the lights
 	}
-
 }
 
 
@@ -179,6 +183,14 @@ void InitializeShadersAndPrograms()
 	mProgramGaussian->AddShader(gaussianVertexShader.get());
 	mProgramGaussian->AddShader(gaussianFragmentShader.get());
 	mProgramGaussian->CompileProgram();
+
+	auto testComputeShader = std::make_shared<Shader>();
+	testComputeShader->LoadShader("Shaders\\InitialTestCompute.comp",  eSHADER_COMPUTE);
+
+	mProgramCompute = std::make_shared<ShaderProgram>();
+	mProgramCompute->AddShader(testComputeShader.get());
+	mProgramCompute->CompileProgram(true);
+
 }
 
 
@@ -190,7 +202,8 @@ void LoadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTexture
 	{
 		auto tGLMesh = std::make_shared<GLMesh>(e);
 
-		tGLMesh->textureID = aTextureLoader->LoadTexture(e.materialData.mTextures[0].mTextureFilePath);
+		uint32_t tTexture = aTextureLoader->LoadTexture(e.materialData.mTextures[0].mTextureFilePath);
+		tGLMesh->mTexture = std::make_shared<GLTexture>(tTexture);
 		mMeshesToBeRendered.push_back(tGLMesh);
 	}
 	aModelLoader->ClearProcessedMeshes();
@@ -202,8 +215,8 @@ void LoadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTexture
 		cubeMesh = std::make_shared<GLMesh>(e);
 	}
 	aModelLoader->ClearProcessedMeshes();
-
 }
+
 
 void RenderQuad();
 int main(int argc, char* argv[])
@@ -220,7 +233,6 @@ int main(int argc, char* argv[])
 	LoadModels(modLoader.get(), texLoader.get());
 
 	Projection = glm::perspective(glm::radians(90.0f), (float)sScreenWidth / (float)sScreenHeight, 0.1f, 1000.0f);
-	View = glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	// Model matrix for sponza
 	glm::mat4x4 modelMatrix = glm::mat4x4(1.0f);
@@ -230,13 +242,14 @@ int main(int argc, char* argv[])
 	
 
 
-	glUseProgram(mProgramHDR->GetProgram());
+	mProgramHDR->UseProgram();
 	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "hdrBuffer"), 0);
 	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "brightnessBuffer"), 1);
-
-	glUseProgram(mProgramGaussian->GetProgram());
+	
+	mProgramGaussian->UseProgram();
 	glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
 
+	glUseProgram(0);
 
 	mScene->Init();
 
@@ -251,7 +264,9 @@ int main(int argc, char* argv[])
 	for (GLuint i = 0; i < 2; i++)
 	{
 		glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, sScreenWidth, sScreenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sScreenWidth, sScreenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
+
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // We clamp to the edge as the blur filter would otherwise sample repeated texture values!
@@ -259,6 +274,7 @@ int main(int argc, char* argv[])
 		// attach texture to framebuffer
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
 	}
+	glBindTexture(GL_TEXTURE_2D, 0);
 	// - Create and attach depth buffer (renderbuffer)
 	GLuint rboDepth;
 	glGenRenderbuffers(1, &rboDepth);
@@ -282,7 +298,8 @@ int main(int argc, char* argv[])
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
 		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, sScreenWidth, sScreenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sScreenWidth, sScreenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // We clamp to the edge as the blur filter would otherwise sample repeated texture values!
@@ -295,49 +312,60 @@ int main(int argc, char* argv[])
 		switch (status) {
 		case GL_FRAMEBUFFER_COMPLETE:
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
 			std::cout << "An attachment could not be bound to frame buffer object!" << std::endl;
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
 			 std::cout << "Attachments are missing! At least one image (texture) must be bound to the frame buffer object!";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
 			 std::cout << "The dimensions of the buffers attached to the currently used frame buffer object do not match!";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
 			 std::cout << "The formats of the currently used frame buffer object are not supported or do not fit together!";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
 			 std::cout << "A Draw buffer is incomplete or undefinied. All draw buffers must specify attachment points that have images attached.";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
 			 std::cout << "A Read buffer is incomplete or undefinied. All read buffers must specify attachment points that have images attached.";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
 			 std::cout << "All images must have the same number of multisample samples.";
 			break;
-
+	
 		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
 			 std::cout << "If a layered image is attached to one attachment, then all attachments must be layered attachments. The attached layers do not have to have the same number of layers, nor do the layers have to come from the same kind of texture.";
 			break;
-
+	
 		case GL_FRAMEBUFFER_UNSUPPORTED:
 			 std::cout << "Attempt to use an unsupported format combinaton!";
 			break;
-
+	
 		default:
 			 std::cout << "Unknown error while attempting to create frame buffer object!";
 			break;
 		}
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+	GLuint computeTexID;
+	glGenTextures(1, &computeTexID);
+	glBindTexture(GL_TEXTURE_2D, computeTexID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	bool quit = false;
 	while (!quit)
@@ -381,83 +409,113 @@ int main(int argc, char* argv[])
 		mScene->Update(engTimer->GetDeltaTime(), input);
 
 		static bool usePhong = true;
+		static bool shouldCompute = false;
+
 		if (input->GetKeyDown(Primitive::Input::KEYS::SPACE))
 		{
 			usePhong = !usePhong;
 		}
+
+		if (input->GetKeyDown(Primitive::Input::KEYS::DOWNARROW))
+		{
+			shouldCompute = !shouldCompute;
+		}
 	
+		
+
 		// Render
 		// Clear the colorbuffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-	
+		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
 		glCullFace(GL_BACK);
 		glEnable(GL_DEPTH_TEST);
-
+		
 		// Draw our first triangle
-		glUseProgram(mProgram->GetProgram());
+		mProgram->UseProgram();
 		BindLights(mProgram->GetProgram(), mScene.get());
 		glUniformMatrix4fv(glGetUniformLocation(mProgram->GetProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(Projection));
 		glUniformMatrix4fv(glGetUniformLocation(mProgram->GetProgram(), "view"), 1, GL_FALSE, glm::value_ptr(mScene->GetCamera()->GetViewMatrix()));
 		glUniformMatrix4fv(glGetUniformLocation(mProgram->GetProgram(), "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
 		glUniform1i(glGetUniformLocation(mProgram->GetProgram(), "usePhong"), (int)usePhong);
-
+		
 		glUniform3f(glGetUniformLocation(mProgram->GetProgram(), "cameraPosition"), mScene->GetCamera()->camPosition.x, mScene->GetCamera()->camPosition.y, mScene->GetCamera()->camPosition.z);
-
-
+		
+		
 		for (auto e : mMeshesToBeRendered)
 		{
 			glUniform1i(glGetUniformLocation(mProgram->GetProgram(), "diffuseTexture"), 0);
-
+		
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, e->textureID);
-
+			glBindTexture(GL_TEXTURE_2D, e->mTexture->GetTextureID());
+		
 			glBindVertexArray(e->mVAO);
 			//glDrawArrays(GL_TRIANGLES, 0, 6);
 			glDrawElements(GL_TRIANGLES, e->mAmountOfIndices, GL_UNSIGNED_INT, 0);
 			glBindVertexArray(0);
 		}
-
-		glUseProgram(0);
-
-
+		
+		
+		
 		RenderLights(cubeMesh.get(), mProgramLight->GetProgram());
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-		// 2. Blur bright fragments w/ two-pass Gaussian Blur 
+		GLTimer mComputeTimer;
+		mComputeTimer.Start();
+
+		// Gaussian blur
 		GLboolean horizontal = true, first_iteration = true;
-		GLuint amount = 20;
-		glUseProgram(mProgramGaussian->GetProgram());
-		std::cout << mProgramGaussian->GetProgram() << std::endl;
-		for (GLuint i = 0; i < amount; i++)
+		GLuint amount = 6;
+
+		if (!shouldCompute)
 		{
-
-			//std::cout << "hello" << std::endl;
-			glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
-			glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "horizontal"), horizontal);
-			glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
-
-			glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
-
-			RenderQuad();
-			horizontal = !horizontal;
-			if (first_iteration)
-				first_iteration = false;
+			mProgramGaussian->UseProgram();
+			for (GLuint i = 0; i < amount; i++)
+			{
+				glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+				glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "horizontal"), horizontal);
+				glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
+			
+				glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+			
+				RenderQuad();
+				horizontal = !horizontal;
+				if (first_iteration)
+					first_iteration = false;
+			}
+			
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		else
+		{
+			mProgramCompute->UseProgram();
+			
+			glBindImageTexture(0, colorBuffers[1], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+			glBindImageTexture(1, pingpongColorbuffers[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+			glDispatchCompute(sScreenWidth / 8, sScreenHeight / 8, 1);
 
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+			glUseProgram(0);
+		}
+		
+		mComputeTimer.Stop();
+		
+		printf("Time spent on the GPU: %f ms\n", mComputeTimer.GetElapsedTime());
+
+		// Post processing stage
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glUseProgram(mProgramHDR->GetProgram());
+		mProgramHDR->UseProgram();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[0]);
 		RenderQuad();
 		glUseProgram(0);
 
@@ -468,7 +526,12 @@ int main(int argc, char* argv[])
 
 	// Properly de-allocate all resources once they've outlived their purpose
 	
-	
+	glDeleteTextures(_countof(pingpongColorbuffers), pingpongColorbuffers);
+	glDeleteTextures(_countof(colorBuffers), colorBuffers);
+	glDeleteTextures(1, &computeTexID);
+	glDeleteFramebuffers(1, &hdrFBO);
+	glDeleteFramebuffers(_countof(pingpongFBO), pingpongFBO);
+
 	SDL_DestroyWindow(window);
 
 	return 0;
