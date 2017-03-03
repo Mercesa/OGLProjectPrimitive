@@ -19,6 +19,9 @@
     <Filter Include="Scenes">
       <UniqueIdentifier>{4cb713a1-32b4-435c-8143-5cc4ca863803}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderingEnvironments">
+      <UniqueIdentifier>{d37b349e-91db-4183-9f2a-914bcf7d6743}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -57,9 +60,6 @@
     <ClInclude Include="GLTextureLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AssetsDatabase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,6 +80,27 @@
     </ClInclude>
     <ClInclude Include="GLFramebuffer.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureSamplers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingHelperFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetsDatabase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BloomEnvironment.h">
+      <Filter>RenderingEnvironments</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderEnvironment.h">
+      <Filter>RenderingEnvironments</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputeRaytracerEnvironment.h">
+      <Filter>RenderingEnvironments</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -131,6 +152,18 @@
     <ClCompile Include="GLFramebuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SceneObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BloomEnvironment.cpp">
+      <Filter>RenderingEnvironments</Filter>
+    </ClCompile>
+    <ClCompile Include="IRenderEnvironment.cpp">
+      <Filter>RenderingEnvironments</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputeRaytracerEnvironment.cpp">
+      <Filter>RenderingEnvironments</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\FragmentShaderBasicPosition.frag">
@@ -158,6 +191,18 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\InitialTestCompute.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GBufferViewPass.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GBufferViewPass.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderSSAO.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderSSAO.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

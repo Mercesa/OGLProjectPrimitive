@@ -20,3 +20,8 @@ const std::shared_ptr<Camera> IScene::GetCamera()
 	assert(mCamera != nullptr);
 	return mCamera; 
 }
+
+const std::vector<std::shared_ptr<SceneObject>> IScene::GetSceneObjects()
+{
+	return mSceneObjects;
+}

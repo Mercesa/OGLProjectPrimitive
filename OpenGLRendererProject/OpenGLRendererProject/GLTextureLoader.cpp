@@ -17,6 +17,7 @@ GLTextureLoader::~GLTextureLoader()
 {
 }
 #include <iostream>
+// Generic texture caching for model loading
 uint32_t GLTextureLoader::LoadTexture(const std::string& aString)
 {
 	GLuint textures[1];
