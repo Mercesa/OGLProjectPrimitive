@@ -1,8 +1,8 @@
 #version 430 core
 
 // Write to RGBA buffer
-layout(location = 0) out vec3 color;
-layout(location = 1) out vec3 brightnessColor;
+out vec4 color;
+//layout(location = 1) out vec3 brightnessColor;
 
 
 struct light
@@ -68,11 +68,11 @@ void main()
 
 	}
 
-	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-	if(brightness > 1.0f)
-		brightnessColor = color;
-	else{
-		brightnessColor = vec3(0.0f, 0.0f, 0.0f);
-	}
+	//float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	//if(brightness > 1.0f)
+	//	//brightnessColor = color;
+	//else{
+	//	//brightnessColor = vec3(0.0f, 0.0f, 0.0f);
+	//}
 
 }	

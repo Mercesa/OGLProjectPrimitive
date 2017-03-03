@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 
+#include <GL\glew.h>
 namespace Primitive{
 
 
@@ -10,7 +11,12 @@ namespace Primitive{
 class GLTexture
 {
 public:
-	GLTexture(uint32_t aTextureID);
+	// Some parameters to create our textures with
+	GLTexture(GLint aLevel, GLint internalFormat, GLint aScreenWidth, GLint aScreenHeight, GLint aBorder, GLint aExternalFormat, GLenum aType, void* pixels);
+
+	// Constructor for if we already initialized a texture
+	GLTexture(GLuint aTexture);
+
 	~GLTexture();
 
 	uint32_t GetTextureID();

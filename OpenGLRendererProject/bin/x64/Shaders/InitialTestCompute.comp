@@ -15,23 +15,25 @@ void main(void)
 	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
 
 	bool horizontal = true;
-	for(int j = 0; j < 6; ++j)
+	
+	for(int j = 0; j < 5; ++j)
 	{
 		if(horizontal)
 		{
+			barrier();
 			vec3 pixelColour = imageLoad(img_input, p).rgb;
 		    for(int i = 1; i < 5; ++i)
 		    {
 		       pixelColour += imageLoad(img_input, p + ivec2(i, 0.0)).rgb * weight[i];
 		       pixelColour += imageLoad(img_input, p - ivec2(i, 0.0)).rgb * weight[i];
 		    }
-			barrier();
 			imageStore(img_output, p, vec4(pixelColour.rgb, 1.0f));  
 		}
 
 		else
 		{
 			vec3 pixelColour = imageLoad(img_output, p).rgb;
+			barrier();
 
 		    for(int i = 1; i < 5; ++i)
 		    {

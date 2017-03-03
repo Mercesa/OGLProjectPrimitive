@@ -3,6 +3,10 @@
 using namespace Primitive;
 
 #include <time.h>
+
+#include "GLMesh.h"
+#include "MeshData.h"
+
 FirstTestScene::FirstTestScene()
 {
 }
@@ -10,6 +14,27 @@ FirstTestScene::FirstTestScene()
 
 FirstTestScene::~FirstTestScene()
 {
+}
+
+void FirstTestScene::UploadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTextureLoader)
+{
+	std::shared_ptr<SceneObject> sceneObject = std::make_shared<SceneObject>();
+	sceneObject->mTransform = glm::scale(glm::mat4(), glm::vec3(0.01f));
+
+
+	aModelLoader->LoadModel("Models\\Sponza\\Sponza.obj");
+
+	for (auto e : aModelLoader->GetMeshesToBeProcessed())
+	{
+		auto tGLMesh = std::make_shared<GLMesh>(e);
+
+		uint32_t tTexture = aTextureLoader->LoadTexture(e.materialData.mTextures[0].mTextureFilePath);
+		tGLMesh->mTexture = std::make_shared<GLTexture>(tTexture);
+		sceneObject->mMeshes.push_back(tGLMesh);
+	}
+	aModelLoader->ClearProcessedMeshes();
+
+	mSceneObjects.push_back(sceneObject);
 }
 
 void FirstTestScene::Init()
@@ -72,6 +97,3 @@ void FirstTestScene::OnMouseMove(std::shared_ptr<Input> aInput)
 {
 	this->mCamera->MoveWithMouse(aInput->mouseRelativeMoved.x, aInput->mouseRelativeMoved.y);
 }
-
-
-

@@ -142,11 +142,13 @@ void ModelLoader::ProcessMesh(aiMesh* const a_Mesh, const aiScene* const a_Scene
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	// Process vertices&indices
+	// Process vertices & indices
 	ProcessVertices(a_Mesh, vertices);
 	ProcessIndices(a_Mesh, indices);
+
+
 	TextureData textData = ProcessMaterial(a_Mesh, a_Scene);
-	//std::cout << textData.mTextureFilePath << std::endl;
+
 
 	MeshData meshData;
 	meshData.verticeData = vertices;
