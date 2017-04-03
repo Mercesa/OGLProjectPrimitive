@@ -66,12 +66,6 @@
     <ClInclude Include="FirstTestScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
-    <ClInclude Include="IScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GLTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -93,14 +87,20 @@
     <ClInclude Include="AssetsDatabase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BloomEnvironment.h">
-      <Filter>RenderingEnvironments</Filter>
-    </ClInclude>
     <ClInclude Include="IRenderEnvironment.h">
       <Filter>RenderingEnvironments</Filter>
     </ClInclude>
     <ClInclude Include="ComputeRaytracerEnvironment.h">
       <Filter>RenderingEnvironments</Filter>
+    </ClInclude>
+    <ClInclude Include="BloomEnvironment.h">
+      <Filter>RenderingEnvironments</Filter>
+    </ClInclude>
+    <ClInclude Include="IScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="Globals.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -140,9 +140,6 @@
     <ClCompile Include="IScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GLTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -155,13 +152,13 @@
     <ClCompile Include="SceneObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BloomEnvironment.cpp">
-      <Filter>RenderingEnvironments</Filter>
-    </ClCompile>
     <ClCompile Include="IRenderEnvironment.cpp">
       <Filter>RenderingEnvironments</Filter>
     </ClCompile>
     <ClCompile Include="ComputeRaytracerEnvironment.cpp">
+      <Filter>RenderingEnvironments</Filter>
+    </ClCompile>
+    <ClCompile Include="BloomEnvironment.cpp">
       <Filter>RenderingEnvironments</Filter>
     </ClCompile>
   </ItemGroup>
@@ -203,6 +200,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\ShaderSSAO.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\RaytracerCompute.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\HDRDownscale.comp">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

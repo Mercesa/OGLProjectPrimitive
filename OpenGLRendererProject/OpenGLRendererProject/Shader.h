@@ -19,7 +19,7 @@ enum Shader_Types
 };
 
 
-class Shader
+class Shader 
 {
 	// Shader has a type
 public:

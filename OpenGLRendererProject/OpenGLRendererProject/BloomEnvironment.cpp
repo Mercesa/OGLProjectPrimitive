@@ -25,6 +25,8 @@ using namespace Primitive;
 #include "GLTexture.h"
 #include "GLFramebuffer.h"
 
+#include "Globals.h"
+
 BloomEnvironment::BloomEnvironment()
 {
 }
@@ -35,11 +37,9 @@ BloomEnvironment::~BloomEnvironment()
 }
 
 
-// Shaders
-static const int16_t sScreenWidth = 1280;
-static const int16_t sScreenHeight = 720;
 
-glm::mat4 Projection = glm::perspective(glm::radians(90.0f), (float)sScreenWidth / (float)sScreenHeight, 0.1f, 1000.0f);
+
+glm::mat4 Projection = glm::perspective(glm::radians(90.0f), (float)gWidth / (float)gHeight, 0.1f, 1000.0f);
 
 GLuint hdrFBO;
 GLuint colorBuffers[2];
@@ -133,17 +133,35 @@ void InitializeShadersAndPrograms()
 	ssaoPassVertex->LoadShader("Shaders\\ShaderSSAO.vert", eSHADER_VERTEX);
 
 	auto ssaoPassFragment = std::make_shared<Shader>();
-	ssaoPassFragment->LoadShader("Shaders\\ShaderSSAo.frag", eSHADER_FRAGMENT);
+	ssaoPassFragment->LoadShader("Shaders\\ShaderSSAO.frag", eSHADER_FRAGMENT);
 
 	mProgramSSAO = std::make_shared<ShaderProgram>();
 	mProgramSSAO->AddShader(ssaoPassVertex.get());
 	mProgramSSAO->AddShader(ssaoPassFragment.get());
 	mProgramSSAO->CompileProgram();
+
+	auto hdrCompute = std::make_shared<Shader>();
+	hdrCompute->LoadShader("Shaders\\HDRDownscale.comp", eSHADER_COMPUTE);
+
+
+	auto hdrProgram = std::make_shared<ShaderProgram>();
+	hdrProgram->AddShader(hdrCompute.get());
+	hdrProgram->CompileProgram(true);
+
+	
 }
 
 void BloomEnvironment::Initialize()
 {
 	InitializeShadersAndPrograms();
+	
+	glUseProgram(mProgramHDR->GetProgram());
+	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "hdrBuffer"), 0);
+	glUniform1i(glGetUniformLocation(mProgramHDR->GetProgram(), "brightnessBuffer"), 1);
+
+	glUseProgram(mProgramGaussian->GetProgram());
+	glUniform1i(glGetUniformLocation(mProgramGaussian->GetProgram(), "image"), 0);
+
 	// Set up floating point framebuffer to render scene to
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
@@ -152,8 +170,8 @@ void BloomEnvironment::Initialize()
 	for (GLuint i = 0; i < 2; i++)
 	{
 		glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sScreenWidth, sScreenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gWidth, gHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, gWidth, gHeight);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -166,8 +184,9 @@ void BloomEnvironment::Initialize()
 	// - Create and attach depth buffer (renderbuffer)
 	glGenRenderbuffers(1, &rboDepth);
 	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sScreenWidth, sScreenHeight);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, gWidth, gHeight);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
 	// - Tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
 	GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 	glDrawBuffers(2, attachments);
@@ -183,8 +202,8 @@ void BloomEnvironment::Initialize()
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
 		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sScreenWidth, sScreenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, gWidth, gHeight);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gWidth, gHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // We clamp to the edge as the blur filter would otherwise sample repeated texture values!
@@ -198,7 +217,7 @@ void BloomEnvironment::Initialize()
 
 	glGenTextures(1, &computeTexID);
 	glBindTexture(GL_TEXTURE_2D, computeTexID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, sScreenWidth, sScreenHeight);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, gWidth, gHeight);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -246,11 +265,7 @@ void BloomEnvironment::Render(IScene* aScene)
 		}
 	}
 	
-
-
-
 	RenderLights(cubeMesh.get(), mProgramLight->GetProgram(), aScene, Projection);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -288,7 +303,7 @@ void BloomEnvironment::Render(IScene* aScene)
 
 		glBindImageTexture(0, colorBuffers[1], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 		glBindImageTexture(1, pingpongColorbuffers[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
-		glDispatchCompute(sScreenWidth / 8, sScreenHeight / 8, 1);
+		glDispatchCompute(gWidth / 8, gHeight / 8, 1);
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 

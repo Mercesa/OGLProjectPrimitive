@@ -77,6 +77,7 @@ void ProcessVertices(aiMesh* const a_Mesh, std::vector<Vertex>& a_Vertices)
 	}
 }
 
+
 // Process indices
 void ProcessIndices(aiMesh* const a_Mesh, std::vector<uint32_t>& a_Indices)
 {
@@ -97,6 +98,7 @@ const std::vector<MeshData>& ModelLoader::GetMeshesToBeProcessed()
 {
 	return mMeshesToBeProcessed;
 }
+
 
 std::string GetTextureLocation(aiMaterial* const a_Mat, aiTextureType a_Type)
 {
@@ -176,10 +178,11 @@ void ModelLoader::ProcessNode(aiNode* const a_Node, const aiScene* const a_Scene
 	}
 }
 
-
 void ModelLoader::LoadModel(const char* const aFilePath)
 {
 	Assimp::Importer importer;
+
+
 
 	const aiScene* scene;
 
@@ -197,5 +200,5 @@ void ModelLoader::LoadModel(const char* const aFilePath)
 	mDirectory = aFilePathStr.substr(0, aFilePathStr.find_last_of("\\"));
 	
 	ProcessNode(scene->mRootNode, scene);
-	printf("%i", mMeshesToBeProcessed.size());
+	//printf("%i", mMeshesToBeProcessed.size());
 }

@@ -12,9 +12,9 @@ public:
 	ComputeRaytracerEnvironment();
 	~ComputeRaytracerEnvironment();
 
-	void Initialize();
-	void Render(IScene* aScene);
-	void CleanUp();
+	virtual void Initialize();
+	virtual void Render(IScene* aScene);
+	virtual void CleanUp();
 };
 
 };

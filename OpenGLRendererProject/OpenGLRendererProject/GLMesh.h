@@ -22,7 +22,6 @@ public:
 	uint32_t mAmountOfIndices;
 
 	std::shared_ptr<GLTexture> mTexture;
-
 };
 
 }

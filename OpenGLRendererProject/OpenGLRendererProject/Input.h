@@ -46,7 +46,6 @@ private:
 	bool keys[9];
 	bool mouseButtonsDown[3];
 	bool mouseButtonsUp[3];
-
 };
 
 }

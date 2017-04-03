@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <iostream>
 namespace Primitive
 {
 
@@ -16,5 +16,7 @@ public:
 	virtual void Initialize() = 0;
 	virtual void Render(IScene* aScene) = 0;
 	virtual void CleanUp() = 0;
+
+	bool isInitialized = false;
 };
 }

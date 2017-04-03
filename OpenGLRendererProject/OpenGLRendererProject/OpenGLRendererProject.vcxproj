@@ -169,6 +169,7 @@
     <ClInclude Include="FirstTestScene.h" />
     <ClInclude Include="GLFramebuffer.h" />
     <ClInclude Include="GLMesh.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="GLTexture.h" />
     <ClInclude Include="GLTextureLoader.h" />
     <ClInclude Include="GLTimer.h" />
@@ -178,7 +179,6 @@
     <ClInclude Include="MeshData.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="IScene.h" />
-    <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderingHelperFunctions.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="Shader.h" />
@@ -203,7 +203,6 @@
     <ClCompile Include="IScene.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="OpenGLRendererProject.cpp" />
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
@@ -216,9 +215,11 @@
     <None Include="Shaders\GBufferViewPass.frag" />
     <None Include="Shaders\GBufferViewPass.vert" />
     <None Include="Shaders\GuassianBlur.frag" />
+    <None Include="Shaders\HDRDownscale.comp" />
     <None Include="Shaders\InitialTestCompute.comp" />
     <None Include="Shaders\PostProcHDR.frag" />
     <None Include="Shaders\PostProcHDR.vert" />
+    <None Include="Shaders\RaytracerCompute.comp" />
     <None Include="Shaders\ShaderSSAO.frag" />
     <None Include="Shaders\ShaderSSAO.vert" />
     <None Include="Shaders\VertexShaderBasicPosition.vert" />

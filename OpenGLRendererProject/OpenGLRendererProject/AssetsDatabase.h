@@ -25,4 +25,14 @@ static void AddToMap(std::string aFilePath, uint32_t aID)
 	textureMap.insert(std::pair<std::string, uint32_t>(aFilePath, aID));
 }
 
+class Shader;
+static std::map<std::string, Shader*> mShaderMap;
+
+
+static void AddToShaderMap(std::string aFilePath, Shader* aShader)
+{
+	mShaderMap.insert(std::pair<std::string, Shader*>(aFilePath, aShader));
+}
+
+
 };

@@ -17,9 +17,19 @@ Shader::~Shader()
 	glDeleteShader(mShader);
 }
 
+#include <sys/stat.h>
+
+bool FileExists(const char* filename)
+{
+	struct stat fileInfo;
+	return stat(filename, &fileInfo) == 0;
+}
+
 bool Shader::LoadShader(const std::string& aFilePath, Shader_Types aType)
 {
 	//assert(aShader != nullptr);
+
+	assert(FileExists(aFilePath.c_str()) != false);
 
 	int32_t shaderType = -1;
 
@@ -69,7 +79,7 @@ bool Shader::LoadShader(const std::string& aFilePath, Shader_Types aType)
 
 	if (succesGL == GL_FALSE)
 	{
-		GLint maxLength = 0;
+		GLint maxLength = 1024;
 		glGetShaderiv(mShader, GL_INFO_LOG_LENGTH, &maxLength);
 
 		glGetShaderInfoLog(mShader, maxLength, &maxLength, errorLog);

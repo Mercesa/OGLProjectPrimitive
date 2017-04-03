@@ -21,6 +21,7 @@ public:
 	SceneObject();
 	~SceneObject();
 
+
 	glm::mat4 mTransform;
 	std::vector<std::shared_ptr<GLMesh>> mMeshes;
 };

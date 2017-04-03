@@ -29,22 +29,17 @@
 #include "GLTexture.h"
 #include "GLFramebuffer.h"
 #include "BloomEnvironment.h"
-
-GLfloat lerp(GLfloat a, GLfloat b, GLfloat f)
-{
-	return a + f * (b - a);
-}
-
+#include "ComputeRaytracerEnvironment.h"
+#include "IRenderEnvironment.h"
+#include "Globals.h"
 
 using namespace Primitive;
 
 
-// Shaders
-static const int16_t sScreenWidth = 1280;
-static const int16_t sScreenHeight = 720;
 
 
-std::unique_ptr<IScene> mScene = std::make_unique<FirstTestScene>();
+
+std::unique_ptr<FirstTestScene> mScene = std::make_unique<FirstTestScene>();
 
 std::vector<Light> gLights;
 static const uint16_t MAX_LIGHTS = 256;
@@ -53,7 +48,10 @@ static const uint16_t MAX_LIGHTS = 256;
 SDL_Window* window;
 
 std::unique_ptr<BloomEnvironment> mBloomEnvironment;
+std::unique_ptr<ComputeRaytracerEnvironment> mRayTraceEnvironment;
 
+IRenderEnvironment *currentRenderingEnvironment = nullptr;
+IScene *currentScene = nullptr;
 
 void InitializeOGL()
 {
@@ -65,7 +63,7 @@ void InitializeOGL()
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
-	window = SDL_CreateWindow("OpenGL", 100, 100, sScreenWidth, sScreenHeight, SDL_WINDOW_OPENGL);
+	window = SDL_CreateWindow("OpenGL", 100, 100, gWidth, gHeight, SDL_WINDOW_OPENGL);
 	SDL_GLContext context = SDL_GL_CreateContext(window);
 
 	glewExperimental = GL_TRUE;
@@ -75,20 +73,17 @@ void InitializeOGL()
 
 	SDL_GL_SetSwapInterval(0);
 	// Define the viewport dimensions
-	glViewport(0, 0, sScreenWidth, sScreenHeight);
+	glViewport(0, 0, gWidth, gHeight);
 }
 
 
-
-void LoadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTextureLoader)
+void LoadBoxMesh(ModelLoader* const aModelLoader, GLTextureLoader* const aTextureLoader)
 {
-	aModelLoader->ClearProcessedMeshes();
 
-
-	aModelLoader->LoadModel("Models\\Cube.obj");
+	aModelLoader->LoadModel("Models\\cube.obj");
 	for (auto e : aModelLoader->GetMeshesToBeProcessed())
 	{
-		mBloomEnvironment->cubeMesh = std::make_shared<GLMesh>(e);
+		mBloomEnvironment->cubeMesh = std::move(std::make_shared<GLMesh>(e));
 	}
 	aModelLoader->ClearProcessedMeshes();
 }
@@ -96,8 +91,7 @@ void LoadModels(ModelLoader* const aModelLoader, GLTextureLoader* const aTexture
 
 int main(int argc, char* argv[])
 {
-	
-	InitializeOGL();
+	InitializeOGL(); 
 
 	std::unique_ptr<ModelLoader> modLoader = std::make_unique<ModelLoader>();
 	std::unique_ptr<GLTextureLoader> texLoader = std::make_unique<GLTextureLoader>();
@@ -105,29 +99,26 @@ int main(int argc, char* argv[])
 	auto engTimer = std::make_unique<EngineTimer>();
 
 
+	mBloomEnvironment = std::make_unique<BloomEnvironment>();
+	LoadBoxMesh(modLoader.get(), texLoader.get());
+
+	currentRenderingEnvironment = mBloomEnvironment.get();
+	currentRenderingEnvironment->Initialize();
+	currentRenderingEnvironment->isInitialized = true;
+
+	currentScene = mScene.get();
+	currentScene->Init();
+	currentScene->UploadModels(modLoader.get(), texLoader.get());
 
 
 	SDL_Event evt;
 	
-	
-	mScene->Init();
-	mScene->UploadModels(modLoader.get(), texLoader.get());
-	mBloomEnvironment = std::make_unique<BloomEnvironment>();
-
-	mBloomEnvironment->Initialize();
-	LoadModels(modLoader.get(), texLoader.get());
-	
-
-
-
 	bool quit = false;
 	while (!quit)
 	{
 		//engTimer->Start();
 		engTimer->Update();
 		input->Update();
-
-		bool mouseMove = false;
 
 		// SDL event loop, click the window cross to kill the window and end the engine loop
 
@@ -150,7 +141,6 @@ int main(int argc, char* argv[])
 			case SDL_MOUSEMOTION:
 				input->MouseMove(evt.motion.x, evt.motion.y);
 				mScene->OnMouseMove(input);
-				mouseMove = true;
 				break;
 
 			case SDL_QUIT:
@@ -161,30 +151,23 @@ int main(int argc, char* argv[])
 		
 		mScene->Update(engTimer->GetDeltaTime(), input);
 
-		static bool usePhong = true;
-		static bool shouldCompute = false;
-
-		if (input->GetKeyDown(Primitive::Input::KEYS::SPACE))
+		//assert(currentScene != nullptr);
+		assert(currentRenderingEnvironment != nullptr);
+		if (!currentRenderingEnvironment->isInitialized)
 		{
-			usePhong = !usePhong;
+			currentRenderingEnvironment->Initialize();
+			currentRenderingEnvironment->isInitialized = true;
 		}
 
-		if (input->GetKeyDown(Primitive::Input::KEYS::DOWNARROW))
-		{
-			shouldCompute = !shouldCompute;
-		}
-	
-		mBloomEnvironment->Render(mScene.get());
+		currentRenderingEnvironment->Render(currentScene);
 
-		
-	
-		
+
 		SDL_SetWindowTitle(window, std::to_string(1.0f / engTimer->GetDeltaTime()).c_str());
 		SDL_GL_SwapWindow(window);
 		
 	}
 	
-	mBloomEnvironment->CleanUp();
+	currentRenderingEnvironment->CleanUp();
 
 
 	SDL_DestroyWindow(window);

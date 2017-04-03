@@ -31,7 +31,7 @@ void ShaderProgram::UseProgram()
 void ShaderProgram::CompileProgram(bool isCompute)
 {
 	// Make sure this program is not compiled yet
-	assert(this->hasCompiled != true);
+	assert(this->hasCompiled != true && "Shader already has compiled");
 	if (this->hasCompiled == true)
 	{
 		std::cout << "ERROR:SHADER::PROGRAM::COMPILE::COMPILING FAILED\n";

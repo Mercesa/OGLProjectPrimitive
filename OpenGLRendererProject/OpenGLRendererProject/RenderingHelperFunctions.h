@@ -20,6 +20,7 @@ static inline void BindLights(uint32_t shaderProgram, IScene* const aScenePtr)
 
 	for (unsigned int i = 0; i < loopAmount; i++)
 	{
+		std::cout << loopAmount << std::endl;
 		Light& l = tLights[i];
 		std::string shaderString = "Lights[" + std::to_string(i) + "].";
 
